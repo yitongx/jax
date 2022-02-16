@@ -248,6 +248,37 @@ def tree_reduce(function: Callable[[T, Any], T],
 def tree_reduce(function: Callable[[T, Any], T],
                 tree: Any,
                 initializer: Any = no_initializer) -> T:
+  '''
+  Apply `function` of two arguments cumulatively to the iterable `tree_leaves(tree)`, 
+  from left to right, so as to reduce the iterable to a single entry.
+  
+  Very Similar to `functools.reduce()`. See [functools.reduce()](https://docs.python.org/3/library/functools.html#functools.reduce) for more details.
+  
+  Args: 
+    function: a function of two arguments.
+    tree: a pytree. Its leaves will be taken as arguments to `function` iterably until reduced to only one entry.
+    initializer: if specify a initializer, then start applying `function` to the initializer and the first leaf,
+    i.e., placing the initializer at the front of iterable leaves. If not presented, only use the entries of `tree`.
+    
+  Returns:
+    the values of iterably applying `function` to entries of `tree`.
+   
+  For example: 
+  >>> t = [{"a": 1, "b": 2}, (3), [4]] # a pytree composed of dictionary, tuple and list
+  >>> leaves_t = jax.tree_util.tree_leaves(t)
+  >>> leaves_t, type(leaves_t)
+  ([1, 2, 3, 4], list)
+  >>> 
+  >>> jax.tree_util.tree_reduce(lambda x, y: x * y, t) # equals to (((((1 * 2) * 3) * 4) * 5) * 6) * 7 == 24
+  24
+  >>> jax.tree_util.tree_reduce(lambda x, y: x * y, t, initializer=0) # equals to ((((((0 * 1) * 2) * 3) * 4) * 5) * 6) * 7) == 0 * 24
+  0
+  >>> u = [{"a": 1, "b": 2}, (3), [4], 'a'] # applying on leaves with different types
+  >>> jax.tree_util.tree_reduce(lambda x, y: x * y, u)  # a string of 24 'a's
+  'aaaaaaaaaaaaaaaaaaaaaaaa'
+  
+  '''
+  
   if initializer is no_initializer:
     return functools.reduce(function, tree_leaves(tree))
   else:
